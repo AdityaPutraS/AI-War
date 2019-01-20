@@ -3,7 +3,7 @@ from config import config
 
 success_message = 'Success'
 failed_message = 'Failed'
-
+sleep_duration = 1
 
 async def handle_echo(reader, writer):
     while True:
@@ -18,31 +18,55 @@ async def handle_echo(reader, writer):
             namaRobot = splitMessage[1]
             aksi = splitMessage[2]
             # aksi = maju, putar, majuPutar, tembak (otw)
-            param1 = int(splitMessage[3])
+            param1 = float(splitMessage[3])
             # param1 = banyak maju, sudut putar, untuk majuPutar param1 = banyakMaju, tembak -> param = 0
             param2 = 0
             if(len(splitMessage) == 5 and aksi == 'majuPutar'):
-                param2 = int(splitMessage[4])
+                param2 = float(splitMessage[4])
             if(namaRobot in config.namaRobot):
                 if(aksi == 'maju'):
                     config.robot[config.namaRobot[namaRobot]].maju(param1)
-                    await asyncio.sleep(1)
-                    writer.write(data)
-                elif(aksi == 'putar'):
-                    config.robot[config.namaRobot[namaRobot]].putar(param1)
-                    await asyncio.sleep(1)
-                    writer.write(data)
+                    await asyncio.sleep(sleep_duration)
+                    writer.write(success_message.encode())
+                elif(aksi == 'putarCW'):
+                    if(param1 >= 0):
+                        config.robot[config.namaRobot[namaRobot]].putarCW(param1)
+                        await asyncio.sleep(sleep_duration)
+                        writer.write(success_message.encode())
+                    else:
+                        writer.write(failed_message.encode())
+                elif(aksi == 'putarCCW'):
+                    if(param1 >= 0):
+                        config.robot[config.namaRobot[namaRobot]].putarCCW(param1)
+                        await asyncio.sleep(sleep_duration)
+                        writer.write(success_message.encode())
+                    else:
+                        writer.write(failed_message.encode())
                 elif(aksi == 'majuPutar'):
                     config.robot[config.namaRobot[namaRobot]].majuPutar(param1,param2)
-                    await asyncio.sleep(1)
-                    writer.write(data)
+                    await asyncio.sleep(sleep_duration)
+                    writer.write(success_message.encode())
                 elif(aksi == 'tembak'):
                     pass
+                elif(aksi == 'status'):
+                    r = config.robot[config.namaRobot[namaRobot]]
+                    x,y = r.getPosisi()
+                    arah = r.getArah()
+                    hp = r.getHP()
+                    am = r.getAmmo()
+                    status = '%d %d %.2f %.2f %d' % (x,y,arah,hp,am)
+                    writer.write(status.encode())
                 else:
-                    writer.write(data)
+                    writer.write(failed_message.encode())
+            else:
+                if(aksi == 'buat'):
+                    if(config.addNewRobot(namaRobot)):
+                        writer.write(success_message.encode())
+                    else:
+                        writer.write(failed_message.encode())
         else:
-            print("Send: %r" % message)
-            writer.write(data)
+            print("Input tidak dikenal, input : %r" % message)
+            writer.write(failed_message.encode())
         await writer.drain()
     print("Close the client socket")
     writer.close()

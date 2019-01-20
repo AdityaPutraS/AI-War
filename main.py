@@ -11,4 +11,3 @@ if(__name__ == "__main__"):
     serverThread = threading.Thread(target=server.startServerURO)
     serverThread.start()
     pyglet.app.run()
-    serverThread.join()

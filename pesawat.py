@@ -4,69 +4,100 @@ import pyglet
 
 maxMaju = 200
 maxPutar = 180
-maxKey = 60
+maxKey = 30
 
 
 class Pesawat:
 
-    def __init__(self, titikTengah, arah,nomor):
+    def __init__(self, titikTengah, arah, nomor):
         # Arah 0 derajat = menghadap timur
         self.titikTengah = titikTengah
         self.targetTengah = titikTengah
         self.arah = arah
         self.targetArah = arah
-        im = pyglet.image.load('sprite/pesawat'+str(nomor)+'.png')
-        self.sprite = pyglet.sprite.Sprite(im,x=titikTengah[0],y=titikTengah[1])
+        im = pyglet.image.load('sprite/pesawat'+str(nomor)+'.png',
+                               decoder=pyglet.image.codecs.png.PNGImageDecoder())
+        self.sprite = pyglet.sprite.Sprite(
+            img=im, x=titikTengah[0], y=titikTengah[1])
         self.sprite.image.anchor_x = self.sprite.image.width / 2
         self.sprite.image.anchor_y = self.sprite.image.height / 2
         self.hp = 100
         self.ammo = 1000
-        self.vLurus = [0,0]
+        self.vLurus = [0, 0]
         self.vPutar = 0
-        self.lagiGerak = False
+        self.lagiMaju = False
+        self.lagiPutar = False
+        self.tickAnimasi = 0
+
+    def __str__(self):
+        teksTitikTengah = "Titik Tengah : (%d, %d)\n" % (
+            self.getPosisi()[0], self.getPosisi()[1])
+        teksArah = "Arah : %.3f\n" % (self.getArah())
+        teksDarah = "HP : %.3f\n" % (self.getHP())
+        teksAmmo = "Ammo : %d\n" % (self.getAmmo())
+        s = teksTitikTengah+teksArah + teksDarah + teksAmmo
+        return s
 
     def update(self):
-        x1,y1 = self.titikTengah
-        x2,y2 = self.targetTengah
-        self.lagiGerak = False
-        if(abs(x2-x1)+abs(y2-y1) > 0.001):
-            self.lagiGerak = True
-            dx,dy = self.vLurus
-            self.titikTengah = x1+dx, y1+dy
-
-        if(abs(abs(self.targetArah)-abs(self.arah)) > 0.001):
-            self.lagiGerak = True
-            self.arah += self.vPutar
-            if(self.arah > 0):
-                self.arah = self.arah % 360
+        x1, y1 = self.titikTengah
+        x2, y2 = self.targetTengah
+        if(self.isGerak()):
+            if(self.tickAnimasi >= maxKey):
+                self.lagiMaju = False
+                self.lagiPutar = False
+                self.tickAnimasi = 0
             else:
-                self.arah = -abs(self.arah)%360
+                if(self.lagiMaju):
+                    dx,dy = self.vLurus
+                    self.setTengah(x1+dx,y1+dy)
+                if(self.lagiPutar):
+                    self.setArah(self.arah+self.vPutar)
+                self.tickAnimasi += 1
 
-        x,y = self.titikTengah
-        self.updateSprite(x=x,y=y,rot=-self.arah)
+        x, y = self.titikTengah
+        self.updateSprite(x=x, y=y, rot=-self.arah)
 
-    def putar(self, deg):
-        if(not(self.lagiGerak)):
-            self.lagiGerak = True
-            self.targetArah = self.arah + deg
-            self.vPutar = deg/((abs(deg)//maxPutar+1)*maxKey)
-        else:
-            print('Lagi Gerak')
+    def putarCW(self, deg):
+        #Asumsi deg >= 0 && deg < maxPutar
+        self.lagiPutar = True
+        self.setTargetArah(deg % 360)
+        self.vPutar = -deg/maxKey
+        self.tickAnimasi = 0
+
+    def putarCCW(self, deg):
+         #Asumsi deg >= 0 && deg < maxPutar
+        self.lagiPutar = True
+        self.setTargetArah(360 - (deg % 360))
+        self.vPutar = deg/maxKey
+        self.tickAnimasi = 0
 
     def maju(self, jarak):
-        if(not(self.lagiGerak)):
-            self.lagiGerak = True
-            movVector = [jarak*math.cos(np.deg2rad(self.arah)),jarak*math.sin(np.deg2rad(self.arah))]
-            self.targetTengah = [self.titikTengah[0] + movVector[0], self.titikTengah[1] + movVector[1]]
-            speed = jarak/((abs(jarak)//maxMaju+1)*maxKey)
-            self.vLurus = [speed*math.cos(np.deg2rad(self.arah)), speed*math.sin(np.deg2rad(self.arah))]
+        #Asumsi abs(jarak) < maxMaju
+        self.lagiMaju = True
+        movVector = [
+            jarak*math.cos(np.deg2rad(self.arah)), jarak*math.sin(np.deg2rad(self.arah))]
+        x,y = self.titikTengah
+        self.setTargetTengah(x+movVector[0], y+movVector[1])
+        speedX = movVector[0]/maxKey
+        speedY = movVector[1]/maxKey
+        self.vLurus = [speedX,speedY]
+        self.tickAnimasi = 0
 
     def majuPutar(self, jarak, sudut):
-        if(not(self.lagiGerak)):
-            self.maju(jarak)
-            self.lagiGerak = False
-            self.putar(sudut)
+        pass
 
+    def setTengah(self, x, y):
+        self.titikTengah = [x, y]
+
+    def setTargetTengah(self,x,y):
+        self.targetTengah = [x, y]
+
+    def setArah(self, arah):
+        self.arah = arah
+
+    def setTargetArah(self,arah):
+        self.targetArah = arah
+    
     def getHP(self):
         return self.hp
 
@@ -85,11 +116,12 @@ class Pesawat:
     def getSprite(self):
         return self.sprite
 
-    def updateSprite(self,x=None,y=None,rot=None,scale=None,s_x=None,s_y=None):
-        self.sprite.update(x=x,y=y,rotation=rot,scale=scale,scale_x=s_x,scale_y=s_y)
+    def updateSprite(self, x=None, y=None, rot=None, scale=None, s_x=None, s_y=None):
+        self.sprite.update(x=x, y=y, rotation=rot,
+                           scale=scale, scale_x=s_x, scale_y=s_y)
 
     def setSpriteBatch(self, batch):
         self.sprite.batch = batch
 
     def isGerak(self):
-        return self.lagiGerak
+        return self.lagiMaju or self.lagiPutar

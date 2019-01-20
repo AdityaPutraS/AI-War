@@ -13,24 +13,16 @@ window = pyglet.window.Window(config.width, config.height, caption = 'AI-War Sek
 def on_key_press(symbol, modifiers):
     print(symbol)
     if(symbol == 97):
-        config.robot[0].maju(100)
+        print('Ti Teng : ',config.robot[0].titikTengah)
+        print('Targ Teng : ',config.robot[0].targetTengah)
+        print('Arah : ',config.robot[0].arah)
+        print('Targ Arah : ',config.robot[0].targetArah)
     elif(symbol == 115):
         print(config.robot[0].getPosisi())
         print(config.robot[0].getArah())
     elif(symbol == 100):
-        print(config.robot[0].isGerak())
-    elif(symbol == 113):
-        print('Arah : ',config.robot[0].getArah())
-        print('Target Arah : ',config.robot[0].getTargetArah())
-        config.robot[0].putar(120)
-        print('Arah : ',config.robot[0].getArah())
-        print('Target Arah : ',config.robot[0].getTargetArah())
-    elif(symbol == 101):
-        print('Arah : ',config.robot[0].getArah())
-        print('Target Arah : ',config.robot[0].getTargetArah())
-        config.robot[0].putar(-120)
-        print('Arah : ',config.robot[0].getArah())
-        print('Target Arah : ',config.robot[0].getTargetArah())
+        for r in range(config.banyakRobotAktif):
+            print(config.robot[r])
 
 @window.event
 def on_draw():
@@ -39,7 +31,7 @@ def on_draw():
     batchPesawat.draw()
 
 def updateAll(dt):
-    for r in config.robot:
-        r.update()
+    for r in range(config.banyakRobotAktif):
+        config.robot[r].update()
 
 pyglet.clock.schedule_interval(updateAll,1/60)
