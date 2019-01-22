@@ -3,7 +3,7 @@ from config import config
 
 success_message = 'Success'
 failed_message = 'Failed'
-sleep_duration = 1
+sleep_duration = 0.8
 
 async def handle_echo(reader, writer):
     while True:
